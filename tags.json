@@ -1,0 +1,14 @@
+{
+    "examples": {
+        "display": "Examples",
+        "pages": ["Example", "Example2"]
+    },
+    "betterexamples": {
+        "display": "Better Examples",
+        "pages": ["Example2"]
+    },
+    "meta": {
+        "display": "Meta",
+        "pages": ["Meta;_Tag", "Meta;_Tags", "Meta;_Pages"]
+    }
+}

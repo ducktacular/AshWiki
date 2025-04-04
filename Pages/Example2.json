@@ -1,0 +1,36 @@
+{
+    "id": "Example2",
+    "title": "Better Example",
+    "type": "person",
+    "main": {
+        "display": {
+            "name": "Name",
+            "aka": "Other names",
+            "birthday": "Birth date",
+            "deathday": "Death date",
+            "pronouns": "Pronouns",
+            "knownfor": "Known for"
+        },
+        "values": {
+            "name": "Jeff",
+            "aka": ["Jeffrey"],
+            "birthday": "1994",
+            "deathday": "2011",
+            "pronouns": ["she/her", "they/them", "he/him"],
+            "knownfor": ["Being an example", "Being a better example than John Doe"]
+        }
+    },
+    "sections": [
+        {
+            "id": "about",
+            "header": "About",
+            "body": ["The about section."]
+        },
+        {
+            "id": "images",
+            "header": "Image Example",
+            "body": ["It can have images, too."],
+            "images": [["/Images/sunset.jpg", "An example image"]]
+        }
+    ]
+}

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <title>Wiki</title>
+        <style>
+            :root {
+                --menuSize: 300px
+            }
+            body {
+                margin: 0px;
+                display: grid;
+                grid-template-columns: 15% auto 15%;
+                grid-template-rows: 50px auto;
+                align-items: center;
+                font-family: Arial, Helvetica, sans-serif;
+                justify-items: center;
+                row-gap: 20px;
+            }
+            #main {
+                width: 100%;
+                margin: 20px;
+            }
+            #title {
+                font-size: 40px;
+                width: 100%;
+                border-bottom: 3px solid #bbbbbb;
+                margin-bottom: 20px;
+            }
+            #title > p {
+                margin: 0px;
+            }
+            #pageNav {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+            }
+            #mainTable {
+                display: grid;
+                padding: 5px;
+                width: fit-content;
+                grid-template-columns: 1fr 1fr;
+                border: 2px solid #444444;
+                justify-items: center;
+                margin-bottom: 20px;
+                height: fit-content;
+                text-wrap: wrap;
+                max-width: 400px;
+                text-align: center;
+            }
+            #mainTable b, #mainTable p {
+                margin: 0px;
+                padding: 0px;
+            }
+            hr {
+                width: 90%;
+                border: 0.8px solid #bbbbbb;
+                background-color: #bbbbbb;
+                grid-column: span 100;
+                height: 0px;
+            }
+            hr.vertical {
+                height: 90%;
+                border: 0.8px solid #bbbbbb;
+                background-color: #bbbbbb;
+                grid-column: span 100;
+                width: 0px;
+            }
+            .sectionTitle {
+                font-size: 30px;
+                width: 100%;
+                border-bottom: 3px solid #bbbbbb;
+                margin-bottom: 20px;
+            }
+            .sectionTitle:hover {
+                cursor: pointer;
+            }
+            .sectionBody {
+                font-size: 18px;
+                display: grid;
+                grid-template-columns: 70% 30%;
+            }
+            .sectionBody > p {
+                margin: 0px;
+                margin-right: 10px !important;
+            }
+            #tableOfContents, #tableOfTags {
+                display: flex;
+                padding: 5px;
+                width: fit-content;
+                max-width: 95%;
+                flex-direction: column;
+                border: 2px solid #444444;
+                justify-items: center;
+                align-content: center;
+                text-align: center;
+                min-height: 200px;
+                max-height: 80vh;
+                overflow-y: auto;
+                align-self: start;
+                top: 15vh;
+                position: sticky;
+                align-items: center;
+            }
+            #tableOfContents > a, #tableOfTags > a {
+                margin-bottom: 5px;
+            }
+            .imageContainer {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 5px;
+                grid-template-columns: 1fr;
+                border: 2px solid #444444;
+                margin: 15px;
+            }
+            .imageContainer > p {
+                margin: 5px;
+            }
+            .image {
+                border: 2px solid #bbbbbb;
+            }
+            .sectionText {
+                padding-right: 20px;
+            }
+            .sectionText:first-of-type p {
+                margin-top: 0px;
+            }
+            .sectionCopy {
+                font-size: 14px;
+            }
+            #topNav {
+                width: 100%;
+                border-bottom: 4px solid #bbbbbb;
+                grid-column: span 3;
+                height: 100%;
+                margin-bottom: 0px;
+                display: flex;
+                line-height: 50px;
+            }
+            #topNav  a {
+                font-size: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="topNav">
+            <div id="rightFloat" style="margin-left:auto;display:flex;">
+                <a href="?p=Meta;_Tags">List of all tags</a>
+                <div style="width:30px"></div>
+                <a href="?p=Meta;_Pages">List of all pages</a>
+                <div style="width:30px"></div>
+            </div>
+        </div>
+    </body>
+    <script>
+        var pageName
+
+        $(document).ready(async function() {
+            var url = window.location
+            let params = new URLSearchParams(url.search)
+
+            if(params.has('p')) {
+                pValue = params.get('p').toLowerCase()
+                if(pValue == "meta;_tag") {
+                    tags = await readJSON("tags")
+                    pageName = "Tag - "+pValue
+                    var links = []
+                    tags[params.get('tag').toLowerCase()].pages.forEach(tag => {
+                        special = ""
+                        if(tag == "Meta;_Tag") {
+                            special = "&tag=meta"
+                        }
+                        links.push(`<a href="?p=${tag}${special}">${tag}</a>`)
+                    })
+                    data = {
+                        "id": "Meta;_Tag",
+                        "title": marked.parse("*Meta;* Tag: "+tags[params.get("tag").toLowerCase()].display),
+                        "tags": ["meta"],
+                        "sections": [
+                            {
+                                "id": "pages",
+                                "header": "Pages with this tag",
+                                "body": links
+                            },
+                            {
+                                "id": "all",
+                                "header": "List of all tags",
+                                "body": [marked.parse(`<a href="?p=Meta;_Tags">List of all tags</a>`)]
+                            }
+                        ]
+                    }
+                    document.title = "Tag - "+tags[params.get('tag').toLowerCase()].display
+                    await loadPage(data)
+                } else if(pValue == "meta;_tags") {
+                    tags = await readJSON("tags")
+                    pageName = "List of all tags"
+                    var links = []
+                    Object.keys(tags).forEach(tag => {
+                        links.push(`<a href="?p=Meta;_Tag&tag=${tag}">${tags[tag].display}</a>`)
+                    })
+                    data = {
+                        "id": "Meta;_Tags",
+                        "title": marked.parse("*Meta;* List of all tags"),
+                        "tags": ["meta"],
+                        "sections": [
+                            {
+                                "id": "pages",
+                                "header": "List of all tags",
+                                "body": links
+                            }
+                        ]
+                    }
+                    await loadPage(data)
+                } else if(pValue == "meta;_pages") {
+                    tags = await readJSON("pages")
+                    tags = tags.pages
+                    pageName = "List of all tags"
+                    var links = []
+                    var metas = []
+                    for(tag of tags) {
+                        tag = await readJSON(`Pages/${tag}`)
+                        console.log(tag)
+                        if(tag.id == "Meta;_Tag") {
+                            metas.push(`<a href="?p=${tag.id}">${tag.title}</a>`)
+                            continue
+                        }
+                        if(tag.id.slice(0, 6) == "Meta;_") {
+                            metas.push(`<a href="?p=${tag.id}">${tag.title}</a>`)
+                            continue
+                        }
+                        links.push(`<a href="?p=${tag.id}">${tag.title}</a>`)
+                    }
+                    data = {
+                        "id": "Meta;_Pages",
+                        "title": marked.parse("*Meta;* List of all pages"),
+                        "tags": ["meta"],
+                        "sections": [
+                            {
+                                "id": "pages",
+                                "header": "List of all pages",
+                                "body": links
+                            },
+                            {
+                                "id": "metapages",
+                                "header": "List of all meta pages",
+                                "body": metas
+                            }
+                        ]
+                    }
+                    await loadPage(data)
+                } else {
+                    pageName = pValue
+                    let data = await readJSON(`Pages/${pValue}`)
+                    document.title = data.title
+                    await loadPage(data)
+                }
+            }
+
+            if(window.location.hash) {
+                goTo(window.location.hash)
+            }
+        })
+
+        async function loadPage(data) {
+            $("body").append(`
+                <div id="tableOfContents"></div>
+                <div id="main">
+                    <div id="title">${data.title}</div>
+                    <div id="pageNav"></div>
+                </div>
+            `)
+            if(data.main) {
+                $("#pageNav").append(`
+                    <div id="mainTable"></div>
+                `)
+                Object.keys(data.main.display).forEach(element => {
+                    b = data.main.display[element]
+                    p = data.main.values[element]
+                    if(Array.isArray(data.main.values[element])) {
+                        p = data.main.values[element].join(", ")
+                    }
+                    if(element == "birthday") {
+                        if(!data.main.values.deathday) {
+                            if(data.main.values[element].includes("-")) {
+                                p = p + ` (Age ${getAge(data.main.values[element])})`
+                            } else {
+                                p = p + ` (Age ≈${getAge(data.main.values[element] + "-01-01")})`
+                            }
+                        }
+                    }
+                    if(element == "deathday") {
+                        if(data.main.values[element].includes("-")) {
+                            p = p + ` (Aged ${getAge(data.main.values.birthday, data.main.values.deathday)})`
+                        } else {
+                            p = p + ` (Aged ≈${getAge(data.main.values.birthday + "-01-01", data.main.values.deathday)})`
+                        }
+                    }
+                    $("#mainTable").append(`
+                        <b>${b}</b>
+                        <p>${p}</p>
+                        <hr/>
+                    `)
+                })
+                $("#mainTable").children().last().remove()
+            }
+            $("#tableOfContents").append(`
+                <b>Table of Contents</b>
+                <hr/>
+            `)
+            data.sections.forEach(element => {
+                $("#main").append(`
+                    <div id="section-${element.id}">
+                        <div class="sectionTitle" id="${element.id}">
+                            ${element.header}
+                            <a class="sectionCopy" id="sectionCopy-${element.id}" href="#${element.id}">Link to section</a>
+                        </div>
+                        <div class="sectionBody" id="sectionBody-${element.id}"></div>
+                    </div>
+                `)
+                $(`#sectionCopy-${element.id}`).hide()
+                $(`#${element.id}`).on("click", function(e) {
+                    if(e.target.id == `sectionCopy-${element.id}`) {
+                        return
+                    }
+                    if($(`#sectionCopy-${element.id}`).is(":hidden")) {
+                        $(`#sectionCopy-${element.id}`).show()
+                    } else {
+                        $(`#sectionCopy-${element.id}`).hide()
+                    }
+                })
+                if(element.images) {
+                    $(`#sectionBody-${element.id}`).append(`<div class="sectionText" id="sectionText-${element.id}"></div>`)
+                    $(`#sectionBody-${element.id}`).append(`<div class="sectionImages" id="sectionImages-${element.id}"></div>`)
+                } else {
+                    $(`#sectionBody-${element.id}`).append(`<div class="sectionText" style="grid-column: span 2;" id="sectionText-${element.id}"></div>`)
+                }
+                element.body.forEach((elem) => {
+                    $(`#sectionText-${element.id}`).append(`
+                        ${marked.parse(elem)}
+                    `)
+                })
+                if(element.images) {
+                    element.images.forEach(elem => {
+                        $(`#sectionImages-${element.id}`).append(`
+                            <div class="imageContainer">
+                                <image class="image" src=${elem[0]} alt=${elem[1]} style="width:90%;"></image>
+                                <p>${elem[1]}</p>
+                            </div>
+                        `)
+                    })
+                }
+                $("#tableOfContents").append(`
+                    <a id="tp-${element.id}" href="#${element.id}">${element.header}</a>
+                `)
+            })
+            tags = await readJSON("tags")
+            thisTags = []
+            Object.keys(tags).forEach(val => {
+                if(tags[val].pages.includes(data.id)) {
+                    thisTags.push(val)
+                }
+            })
+            if(thisTags.length > 0) {
+                $("body").append(`
+                    <div id="tableOfTags"></div>
+                `)
+                $("#tableOfTags").append(`
+                    <b>Page Tags</b>
+                    <hr/>
+                `)
+                thisTags.forEach(element => {
+                    $("#tableOfTags").append(`
+                        <a href="?p=meta;_tag&tag=${element}">${tags[element].display}</a>
+                    `)
+                })
+            }
+        }
+
+        function goTo(section) {
+            document.getElementById(section.slice(1)).scrollIntoView()
+        }
+
+        async function readJSON(fileName) {
+            let dataJSON
+            await fetch(`${fileName}.json`)
+                .then(response => response.json())
+                .then(data => {
+                    dataJSON = data
+                })
+                .catch(error => {
+                    $("body").html(`<div style="margin-top:50px">Sorry, something went wrong fetching the JSON file "${fileName}.json". Make sure that it exists and that it's accessible.</div>`)
+                    logError("Error occurred while reading JSON.")
+                })
+            return dataJSON
+        }
+
+        function getAge(dateString, death) {
+            var today = new Date();
+            if(death) {
+                today = new Date(death)
+            }
+            var birthDate = new Date(dateString);
+            var age = today.getFullYear() - birthDate.getFullYear();
+            var m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        function makeURL(page, hash) {
+            if(hash) {
+                end = hash
+            } else {
+                end = ""
+            }
+            return `${window.location.host}${window.location.pathname}?p=${page}${end}`
+        }
+
+        function capitalize(s) {
+            return s && String(s[0]).toUpperCase() + String(s).slice(1);
+        }
+    </script>
+</html>
